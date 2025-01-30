@@ -1,0 +1,6 @@
+{
+     "ROOT_CERTIFICATE": "root_ca.crt",
+     "PRIVATE_CERTIFICATE": "endpoint2.pem",
+     "SERVER_PORT": "444"
+}
+

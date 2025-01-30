@@ -1,0 +1,12 @@
+{
+  "role": "client",
+  "client": "client",
+  "server": "server",
+  "controller_conf_filename": "controller_configuration.json",
+  "ip": "192.168.124.2",
+  "port": "444",
+  "filter": "tcp port 444",
+  "syn": "S",
+  "ack": "A",
+  "syn/ack": "SA"
+}

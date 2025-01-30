@@ -3,7 +3,7 @@
   "client": "client",
   "server": "server",
   "controller_conf_filename": "controller_configuration.json",
-  "ip": "192.168.124.2",
+  "ip": "192.168.123.102",
   "port": "444",
   "filter": "tcp port 444",
   "syn": "S",

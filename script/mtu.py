@@ -78,4 +78,4 @@ def find_mtu(ip):
 if __name__ == "__main__":
     target_ip = input("Enter the target IP: ")  # User input for flexibility
     mtu = find_mtu(target_ip)
-    print(f"Optimal MTU discovered: {mtu} bytes")
+    print(f"Optimal MTU discovered: {mtu} bytes") 

@@ -9,7 +9,7 @@
   "syn": "S",
   "ack": "A",
   "syn/ack": "SA",
-  "lowerBound":"80"
+  "lowerBound":"80",
   "header_bytes":"28",
   "half":"2"
 }

@@ -9,9 +9,6 @@
   "syn": "S",
   "ack": "A",
   "syn/ack": "SA",
-  "lowerBound":"80",
-  "header_bytes":"28",
-  "half":"2",
-  "large_Packet":"1499"
+  "large_Packet":"2000"
   
 }

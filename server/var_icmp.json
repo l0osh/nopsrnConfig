@@ -1,0 +1,20 @@
+{
+  "role": "server",
+  "client": "client",
+  "server": "server",
+  "controller_conf_filename": "controller_configuration.json",
+  "ip": "192.168.123.102",
+  "port": "444",
+  "filter": "icmp",
+  "syn": "S",
+  "ack": "A",
+  "syn/ack": "SA",
+  "lowerBound":"80",
+  "code":"0",
+  "type":"0"
+}
+
+
+
+
+

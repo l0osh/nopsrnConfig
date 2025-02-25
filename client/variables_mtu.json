@@ -10,6 +10,6 @@
   "ack": "A",
   "syn/ack": "SA",
   "lowerBound":"80",
-  "header_bytes":"28",
-  "half":"2"
+  "code":"0",
+  "type":"8"
 }

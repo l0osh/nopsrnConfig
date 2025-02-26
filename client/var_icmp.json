@@ -10,7 +10,7 @@
   "syn": "S",
   "ack": "A",
   "syn/ack": "SA",
-  "lowerBound":"80",
+  "lowerBound":"2800",
   "code":"0",
   "type":"8"
 }

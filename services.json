@@ -1,0 +1,11 @@
+[
+    {"service": "SMTP", "port": 25, "transport": "TCP", "filter": "tcp port 25"},
+    {"service": "FTP", "port": 21, "transport": "TCP", "filter": "tcp port 21"},
+    {"service": "MSSQL", "port": 1434, "transport": "UDP", "filter": "udp port 1434"},
+    {"service": "SIP", "port": 5060, "transport": "TCP", "filter": "tcp port 5060"},
+    {"service": "PPTP Control", "port": 1723, "transport": "TCP", "filter": "tcp port 1723"},
+    {"service": "DNS", "port": 53, "transport": "UDP", "filter": "udp port 53"},
+    {"service": "IMAP", "port": 143, "transport": "TCP", "filter": "tcp port 143"},
+    {"service": "POP3", "port": 110, "transport": "TCP", "filter": "tcp port 110"},
+    {"service": "HTTP", "port": 80, "transport": "TCP", "filter": "tcp port 80"}
+]

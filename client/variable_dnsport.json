@@ -1,0 +1,17 @@
+{
+  "role": "client",
+  "client": "client",
+  "server": "server",
+  "controller_conf_filename": "controller_configuration.json",
+  "ip": "1.1.1.1",
+  "port": "444",
+  "filter": "tcp port 444",
+  "syn": "S",
+  "ack": "A",
+  "syn/ack": "SA",
+  "query":"netalyzr.alya.nopasaran.co"
+}
+
+
+
+

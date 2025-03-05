@@ -1,0 +1,326 @@
+{
+  "id": "Fragmentation",
+  "initial": "First State",
+  "states": {
+    "First State": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "Second State",
+            "actions": [],
+            "meta": {}
+          }
+        ]
+      }
+    },
+    "Second State": {
+      "entry": [
+        {
+          "type": "get_from_file (variables large_Packet) (large_Packet)"
+        },
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "get_from_file (variables server) (server)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "CLIENT_PACKET_SEND",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (ip) (ip)"
+              },
+              {
+                "type": "assign (large_Packet) (large_Packet)"
+              },
+              {
+                "type": "assign (port) (port)"
+              },
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          },
+          {
+            "target": "SERVER_PACKET_LISTEN",
+            "actions": [
+              {
+                "type": "assign (large_Packet) (large_Packet)"
+              },
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "CLIENT_PACKET_SEND": {
+      "entry": [
+        {
+          "type": "create_UDP_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_packet_bytes (pkt large_Packet) (pkt)"
+        },
+        {
+          "type": "set_UDP_dport (pkt port) (pkt)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "CLIENT_PACKET_LISTEN",
+            "actions": [
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SERVER_PACKET_LISTEN": {
+      "entry": [
+        {
+          "type": "set (30) (timeout)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "SEVER_TIMEOUT",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "SERVER_PACKET_SEND",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (large_Packet) (large_Packet)"
+              },
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "CLIENT_PACKET_LISTEN": {
+      "entry": [
+        {
+          "type": "set (30) (timeout)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "CLIENT_TIMEOUT",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "CLIENT_RECIEVE_PACKET",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SEVER_TIMEOUT": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "SERVER_PACKET_SEND": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "get_IP_src (pkt) (client_ip)"
+        },
+        {
+          "type": "get_UDP_sport (pkt) (client_port)"
+        },
+        {
+          "type": "get_UDP_dport (pkt) (s_port)"
+        },
+        {
+          "type": "get_UDP_payload_size (pkt) (payload)"
+        },
+        {
+          "type": "create_UDP_packet (pkt)"
+        },
+        {
+          "type": "set_UDP_dport (pkt client_port) (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt client_ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt s_port) (pkt)"
+        },
+        {
+          "type": "set_UDP_packet_bytes (pkt large_Packet) (pkt)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "CALLING_EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (payload) (payload)"
+              },
+              {
+                "type": "assign (role) (role)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "CLIENT_TIMEOUT": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "CLIENT_RECIEVE_PACKET": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "get_UDP_payload_size (pkt) (payload)"
+        },
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "New state 1",
+            "actions": [
+              {
+                "type": "assign (payload) (payload)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "CALLING_EXCHANGE_SYNC": {
+      "entry": [
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "New state 1",
+            "actions": [
+              {
+                "type": "assign (payload) (payload)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "New state 1": {
+      "entry": [
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict payload) (dict)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    }
+  }
+}

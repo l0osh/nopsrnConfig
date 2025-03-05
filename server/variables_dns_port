@@ -6,7 +6,7 @@
   "controller_conf_filename": "controller_configuration.json",
   "ip": "192.168.123.102",
   "port": "444",
-  "filter": "udp port 53",
+  "filter": "udp dst port 53 and dst host 192.168.123.102",
   "syn": "S",
   "ack": "A",
   "syn/ack": "SA",

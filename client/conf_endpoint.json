@@ -1,6 +1,6 @@
 {
-     "ROOT_CERTIFICATE": "root_ca.crt",
-     "PRIVATE_CERTIFICATE": "endpoint1.pem",
+     "ROOT_CERTIFICATE": "/nopsrnConfig/root_ca.crt",
+     "PRIVATE_CERTIFICATE": "/nopsrnConfig/client/endpoint1.pem",
      "DESTINATION_IP": "192.168.123.102",
      "SERVER_PORT": "900"
 }

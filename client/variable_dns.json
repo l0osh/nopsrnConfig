@@ -5,7 +5,7 @@
   "controller_conf_filename": "controller_configuration.json",
   "ip": "192.168.123.114",
   "port": "444",
-  "filter": "tcp port 444",
+  "filter": "udp dst port 444",
   "syn": "S",
   "ack": "A",
   "syn/ack": "SA",

@@ -265,13 +265,13 @@
           "type": "listen (queue)"
         },
         {
-          "type": "get_IP_src (client_pkt) (client_ip)"
+          "type": "get_IP_src (client_pkt) (resolver_ip)"
         },
         {
           "type": "create_dict (dict)"
         },
         {
-          "type": "add_element_to_dict (dict client_ip) (dict)"
+          "type": "add_element_to_dict (dict resolver_ip) (dict)"
         },
         {
           "type": "get_UDP_sport (client_pkt) (first_sport)"
@@ -306,12 +306,6 @@
       "entry": [
         {
           "type": "get_first_element (queue) (pkt)"
-        },
-        {
-          "type": "get_dns_rcode_from_dns_packet (pkt) (code)"
-        },
-        {
-          "type": "add_element_to_dict (dict code) (dict)"
         },
         {
           "type": "send (pkt2)"

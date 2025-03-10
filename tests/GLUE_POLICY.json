@@ -1,0 +1,434 @@
+{
+  "id": "GLUE_POLICY",
+  "initial": "INITIALIZING",
+  "states": {
+    "INITIALIZING": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "INITIATING_CONTROL_CHANNEL",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "INITIATING_CONTROL_CHANNEL": {
+      "entry": [
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "SETTING_UP",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SETTING_UP": {
+      "entry": [
+        {
+          "type": "get_from_file (variables query) (query)"
+        },
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "get_from_file (variables server) (server)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "SENDING_FIRST_QUERY",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (port) (port)"
+              },
+              {
+                "type": "assign (ip) (ip)"
+              },
+              {
+                "type": "assign (query) (query)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          },
+          {
+            "target": "LISTENING",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_FIRST_QUERY": {
+      "entry": [
+        {
+          "type": "create_DNS_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt port) (pkt)"
+        },
+        {
+          "type": "create_DNS_query(qname)"
+        },
+        {
+          "type": "set_query_name (qname query) (qname)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (pkt qname) (pkt)"
+        },
+        {
+          "type": "set_DNS_packet_query (pkt) (pkt)"
+        },
+        {
+          "type": "append_random_label_to_qname (pkt) (pkt)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "set (true) (first_query_sent)"
+        },
+        {
+          "type": "add_element_to_dict (dict first_query_sent) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "LISTENING_RESPONSE",
+            "actions": [
+              {
+                "type": "assign (pkt) (pkt)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING": {
+      "entry": [
+        {
+          "type": "set (0.5) (timeout)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "RETRIEVING_FIRST_QUERY",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING_RESPONSE": {
+      "entry": [
+        {
+          "type": "set (2) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        }
+      ],
+      "on": {
+        "PACKET_AVAILABLE": [
+          {
+            "target": "EXTRACT_RESPONSE_AND_SEND_SECOND_QUERY",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (pkt) (pkt)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ],
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "TIMEOUT": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "RETRIEVING_FIRST_QUERY": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (client_pkt)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "set (true) (first_query_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict first_query_recieved) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "LISTENING (copy)",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXTRACT_RESPONSE_AND_SEND_SECOND_QUERY": {
+      "entry": [
+        {
+          "type": "set (true) (second_query_sent)"
+        },
+        {
+          "type": "add_element_to_dict (dict second_query_sent) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING (copy)": {
+      "entry": [
+        {
+          "type": "set (0.5) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        }
+      ],
+      "on": {
+        "PACKET_AVAILABLE": [
+          {
+            "target": "RETRIEVING_SECOND_QUERY",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ],
+        "TIMEOUT": [
+          {
+            "target": "NO_QUERY_RECIEVED",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC": {
+      "entry": [
+        {
+          "type": "set (5) (time)"
+        },
+        {
+          "type": "wait (time)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    },
+    "RETRIEVING_SECOND_QUERY": {
+      "entry": [
+        {
+          "type": "set (true) (second_query_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict second_query_recieved) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC (copy)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "NO_QUERY_RECIEVED": {
+      "entry": [
+        {
+          "type": "set (false) (second_query_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict second_query_recieved) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC (copy)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC (copy)": {
+      "entry": {
+        "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+      }
+    }
+  }
+}

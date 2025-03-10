@@ -195,7 +195,7 @@
       "on": {
         "TIMEOUT": [
           {
-            "target": "TIMEOUT2",
+            "target": "TIMEOUT",
             "actions": []
           }
         ],
@@ -245,13 +245,13 @@
         ],
         "TIMEOUT": [
           {
-            "target": "TIMEOUT2",
+            "target": "TIMEOUT",
             "actions": []
           }
         ]
       }
     },
-    "TIMEOUT2": {
+    "TIMEOUT": {
       "entry": {
         "type": "set (TIMEOUT) (timeout)"
       }
@@ -308,13 +308,19 @@
           "type": "get_first_element (queue) (pkt)"
         },
         {
+          "type": "get_dns_rcode_from_dns_packet (pkt) (rcode)"
+        },
+        {
+          "type": "add_element_to_dict (dict rcode) (dict)"
+        },
+        {
           "type": "send (pkt2)"
         }
       ],
       "on": {
         "PACKET_SENT": [
           {
-            "target": "New state 3",
+            "target": "EXCHANGE_SYNC",
             "actions": [
               {
                 "type": "assign (dict) (dict)"
@@ -355,22 +361,19 @@
         ],
         "TIMEOUT": [
           {
-            "target": "TIMEOUT2",
+            "target": "TIMEOUT",
             "actions": []
           }
         ]
       }
     },
-    "New state 3": {
+    "EXCHANGE_SYNC": {
       "entry": [
         {
           "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
         },
         {
-          "type": "set (1) (time)"
-        },
-        {
-          "type": "wait (time)"
+          "type": "done"
         }
       ]
     },
@@ -392,7 +395,7 @@
       "on": {
         "DONE": [
           {
-            "target": "New state 3 (copy)",
+            "target": "EXCHANGE_SYNC",
             "actions": [
               {
                 "type": "assign (ctrl) (ctrl)"
@@ -407,16 +410,6 @@
           }
         ]
       }
-    },
-    "New state 3 (copy)": {
-      "entry": [
-        {
-          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
-        },
-        {
-          "type": "done"
-        }
-      ]
     }
   }
 }

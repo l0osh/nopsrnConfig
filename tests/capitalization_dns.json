@@ -1,0 +1,238 @@
+{
+  "id": "DNS_RESOLVER_IP (copy)",
+  "initial": "INITIALIZING",
+  "states": {
+    "INITIALIZING": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "INITIATING_CONTROL_CHANNEL",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "INITIATING_CONTROL_CHANNEL": {
+      "entry": [
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "Second State",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "Second State": {
+      "entry": [
+        {
+          "type": "get_from_file (variables query) (query)"
+        },
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "get_from_file (variables server) (server)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "SENDING_QUERY",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (port) (port)"
+              },
+              {
+                "type": "assign (ip) (ip)"
+              },
+              {
+                "type": "assign (query) (query)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          },
+          {
+            "target": "LISTENING",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_QUERY": {
+      "entry": [
+        {
+          "type": "create_DNS_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt port) (pkt)"
+        },
+        {
+          "type": "create_DNS_query(qname)"
+        },
+        {
+          "type": "set_query_name (qname query) (qname)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (pkt qname) (pkt)"
+        },
+        {
+          "type": "set_DNS_packet_query (pkt) (pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict qname) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING": {
+      "entry": [
+        {
+          "type": "set (3) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT_ENDING",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "HANDLING_SYN",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC": {
+      "entry": {
+        "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+      }
+    },
+    "TIMEOUT_ENDING": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "HANDLING_SYN": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "get_dns_query_as_string (pkt) (client_qname)"
+        },
+        {
+          "type": "add_element_to_dict (dict client_qname) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

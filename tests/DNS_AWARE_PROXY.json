@@ -1,0 +1,489 @@
+{
+  "id": "MALFORMEDDNS",
+  "initial": "INITIALIZING",
+  "states": {
+    "INITIALIZING": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "INITIATING_CONTROL_CHANNEL",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "INITIATING_CONTROL_CHANNEL": {
+      "entry": [
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "Second State",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "Second State": {
+      "entry": [
+        {
+          "type": "get_from_file (variables query) (query)"
+        },
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "get_from_file (variables server) (server)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "SENDING_QUERY",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (port) (port)"
+              },
+              {
+                "type": "assign (ip) (ip)"
+              },
+              {
+                "type": "assign (query) (query)"
+              }
+            ]
+          },
+          {
+            "target": "LISTENING",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_QUERY": {
+      "entry": [
+        {
+          "type": "create_DNS_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt port) (pkt)"
+        },
+        {
+          "type": "create_DNS_query(qname)"
+        },
+        {
+          "type": "set_query_name (qname query) (qname)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (pkt qname) (pkt)"
+        },
+        {
+          "type": "set_DNS_packet_query (pkt) (pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict query) (dict)"
+        },
+        {
+          "type": "get_DNS_transaction_id (pkt) (tid)"
+        },
+        {
+          "type": "add_element_to_dict (dict tid) (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict port) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "SENDING_QUERY (copy)",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ip) (ip)"
+              },
+              {
+                "type": "assign (port) (port)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING": {
+      "entry": [
+        {
+          "type": "set (10) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT_ENDING",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "HANDLING_SYN",
+            "actions": [
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_QUERY (copy)": {
+      "entry": [
+        {
+          "type": "create_malformed_dns_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt port) (pkt)"
+        },
+        {
+          "type": "set (true) (malformed_packet_sent)"
+        },
+        {
+          "type": "add_element_to_dict (dict malformed_packet_sent) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "LISTENING (copy)",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TIMEOUT_ENDING": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "HANDLING_SYN": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "get_DNS_transaction_id (pkt) (tid)"
+        },
+        {
+          "type": "get_DNS_query_from_DNS_packet (pkt) (cquery)"
+        },
+        {
+          "type": "get_query_name (cquery) (qname)"
+        },
+        {
+          "type": "get_UDP_sport (pkt) (port)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict tid) (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict port) (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict qname) (dict)"
+        },
+        {
+          "type": "set (10) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "PACKET_AVAILABLE": [
+          {
+            "target": "SENDING_RESPONSE_PACKET",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ],
+        "TIMEOUT": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING (copy)": {
+      "entry": [
+        {
+          "type": "set (10) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        },
+        {
+          "type": "set (PACKET_AVAILABLE) (event)"
+        }
+      ],
+      "on": {
+        "PACKET_AVAILABLE": [
+          {
+            "target": "EXCHANGE_SYNC_CLIENT (copy)",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ],
+        "TIMEOUT": [
+          {
+            "target": "EXCHANGE_SYNC_CLIENT",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_RESPONSE_PACKET": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "get_DNS_transaction_id (pkt) (txid)"
+        },
+        {
+          "type": "get_DNS_query_from_DNS_packet (pkt) (cquery)"
+        },
+        {
+          "type": "get_query_name (cquery) (client_query)"
+        },
+        {
+          "type": "add_element_to_dict (dict client_query) (dict)"
+        },
+        {
+          "type": "get_IP_src (pkt) (cip)"
+        },
+        {
+          "type": "get_UDP_sport (pkt) (sport)"
+        },
+        {
+          "type": "get_UDP_dport (pkt) (dport)"
+        },
+        {
+          "type": "create_DNS_packet (rpacket)"
+        },
+        {
+          "type": "set_IP_dst (rpacket cip) (rpacket)"
+        },
+        {
+          "type": "set_UDP_sport (rpacket dport) (rpacket)"
+        },
+        {
+          "type": "set_UDP_dport (rpacket sport) (rpacket)"
+        },
+        {
+          "type": "set_DNS_transaction_id (rpacket txid) (rpacket)"
+        },
+        {
+          "type": "set_DNS_packet_response (rpacket) (rpacket)"
+        },
+        {
+          "type": "create_DNS_query (rquery)"
+        },
+        {
+          "type": "set_query_name (rquery query) (rquery)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (rpacket rquery) (rpkt)"
+        },
+        {
+          "type": "create_DNS_resource_record (rr)"
+        },
+        {
+          "type": "set_DNS_resource_record_domain (rr query) (rr)"
+        },
+        {
+          "type": "set_DNS_resource_record_value (rr ip) (rr)"
+        },
+        {
+          "type": "add_DNS_response_to_answer (rpacket rr) (rpacket)"
+        },
+        {
+          "type": "set (true) (malformed_packet_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict malformed_packet_recieved) (dict)"
+        },
+        {
+          "type": "send (rpacket)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "EXCHANGE_SYNC_RESPONSE",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC": {
+      "entry": [
+        {
+          "type": "set (false) (malformed_packet_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict malformed_packet_recieved) (dict)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    },
+    "EXCHANGE_SYNC_CLIENT (copy)": {
+      "entry": [
+        {
+          "type": "set (false) (dns_response_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict dns_response_recieved) (dict)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    },
+    "EXCHANGE_SYNC_CLIENT": {
+      "entry": [
+        {
+          "type": "set (false) (dns_response_recieved)"
+        },
+        {
+          "type": "add_element_to_dict (dict dns_response_recieved) (dict)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    },
+    "EXCHANGE_SYNC_RESPONSE": {
+      "entry": {
+        "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+      }
+    }
+  }
+}

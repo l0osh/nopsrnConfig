@@ -1,0 +1,305 @@
+{
+  "id": "MAIN (copy)",
+  "initial": "INITIALIZING",
+  "states": {
+    "INITIALIZING": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "LOADING_ROLE_VARIABLES",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "LOADING_ROLE_VARIABLES": {
+      "entry": [
+        {
+          "type": "get_from_file (variables syn/ack) (syn/ack)"
+        },
+        {
+          "type": "get_from_file (variables ack) (ack)"
+        },
+        {
+          "type": "get_from_file (variables syn) (syn)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "get_from_file (variables server) (server)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "SENDING_SYN",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (syn) (syn)"
+              },
+              {
+                "type": "assign (port) (dport)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          },
+          {
+            "target": "LISTENING",
+            "cond": "equal (role server)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_SYN": {
+      "entry": [
+        {
+          "type": "create_TCP_packet (pkt)"
+        },
+        {
+          "type": "set_TCP_dport (pkt dport) (pkt)"
+        },
+        {
+          "type": "set_random_int (100000 200000) (client_seq)"
+        },
+        {
+          "type": "set_random_int (10000 20000) (client_port)"
+        },
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_TCP_flags (pkt syn) (pkt)"
+        },
+        {
+          "type": "send (pkt)"
+        },
+        {
+          "type": "set (PACKET_SENT) (event)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "GET_SIP_AND_SPORT",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (pkt) (pkt)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING": {
+      "entry": [
+        {
+          "type": "set (10) (timeout)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT_ENDING",
+            "actions": []
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "HANDLING_SYN",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "GET_SIP_AND_SPORT": {
+      "entry": [
+        {
+          "type": "get_IP_src (pkt) (client_ip)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict client_ip) (dict)"
+        },
+        {
+          "type": "get_TCP_sport (pkt) (origin_sport)"
+        },
+        {
+          "type": "add_element_to_dict (dict origin_sport) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "SENDING_IP",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TIMEOUT_ENDING": {
+      "entry": {
+        "type": "set (TIMEOUT) (timeout)"
+      }
+    },
+    "HANDLING_SYN": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (client_pkt)"
+        },
+        {
+          "type": "get_IP_src (client_pkt) (client_ip)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict client_ip) (dict)"
+        },
+        {
+          "type": "get_TCP_sport (client_pkt) (translated_sport)"
+        },
+        {
+          "type": "add_element_to_dict (dict translated_sport) (dict)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "set (10) (timeout)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        }
+      ],
+      "on": {
+        "PACKET_AVAILABLE": [
+          {
+            "target": "GET_IP_AND_SPORT",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (queue) (queue)"
+              }
+            ]
+          }
+        ],
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT_ENDING",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "SENDING_IP": {
+      "entry": [
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    "GET_IP_AND_SPORT": {
+      "entry": [
+        {
+          "type": "get_first_element (queue) (client_pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict client_ip) (dict)"
+        },
+        {
+          "type": "get_TCP_sport (client_pkt) (randomized_sport)"
+        },
+        {
+          "type": "add_element_to_dict (dict randomized_sport) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "SENDING_IP",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

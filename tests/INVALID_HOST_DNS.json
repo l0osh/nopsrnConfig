@@ -100,7 +100,7 @@
       "on": {
         "PACKET_SENT": [
           {
-            "target": "EXCHANGE_SYNC (copy)",
+            "target": "LISTENING (copy)",
             "actions": [
               {
                 "type": "assign (dict) (dict)"
@@ -132,19 +132,22 @@
         }
       ],
       "on": {
-        "TIMEOUT": [
+        "PACKET_AVAILABLE": [
           {
-            "target": "TIMEOUT_ENDING",
+            "target": "PACKET_RECIEVED",
             "actions": [
               {
                 "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (queue) (queue)"
               }
             ]
           }
         ],
-        "PACKET_AVAILABLE": [
+        "TIMEOUT": [
           {
-            "target": "PACKET_RECIEVED",
+            "target": "TIMEOUT_ENDING (copy)",
             "actions": [
               {
                 "type": "assign (ctrl) (ctrl)"
@@ -154,44 +157,47 @@
         ]
       }
     },
-    "EXCHANGE_SYNC (copy)": {
+    "LISTENING (copy)": {
       "entry": [
         {
-          "type": "set (2) (time)"
+          "type": "get_from_file (variables filter) (filter)"
         },
         {
-          "type": "wait (time)"
+          "type": "packet_filter (filter)"
         },
         {
-          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
-        }
-      ]
-    },
-    "TIMEOUT_ENDING": {
-      "entry": [
-        {
-          "type": "set (false) (query_received)"
+          "type": "set (3) (timeout)"
         },
         {
-          "type": "create_dict (dict)"
+          "type": "listen (queue)"
         },
         {
-          "type": "add_element_to_dict (dict query_recieved ) (dict)"
-        },
-        {
-          "type": "done"
+          "type": "wait_packet_signal (queue timeout)"
         }
       ],
       "on": {
-        "DONE": [
+        "TIMEOUT": [
           {
-            "target": "EXCHANGE_SYNC",
+            "target": "TIMEOUT_ENDING",
             "actions": [
               {
-                "type": "assign (dict) (dict)"
+                "type": "assign (ctrl) (ctrl)"
               },
               {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "New state 1",
+            "actions": [
+              {
                 "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
               }
             ]
           }
@@ -210,6 +216,115 @@
           "type": "add_element_to_dict (dict query_received) (dict)"
         },
         {
+          "type": "get_first_element (queue) (pkt)"
+        },
+        {
+          "type": "get_DNS_transaction_id (pkt) (txid)"
+        },
+        {
+          "type": "get_DNS_transaction_id (pkt) (txid)"
+        },
+        {
+          "type": "get_DNS_query_from_DNS_packet (pkt) (cquery)"
+        },
+        {
+          "type": "get_query_name (cquery) (client_query)"
+        },
+        {
+          "type": "get_IP_src (pkt) (cip)"
+        },
+        {
+          "type": "get_UDP_sport (pkt) (sport)"
+        },
+        {
+          "type": "get_UDP_dport (pkt) (dport)"
+        },
+        {
+          "type": "create_DNS_packet (rpacket)"
+        },
+        {
+          "type": "set_IP_dst (rpacket cip) (rpacket)"
+        },
+        {
+          "type": "set_UDP_sport (rpacket dport) (rpacket)"
+        },
+        {
+          "type": "set_UDP_dport (rpacket sport) (rpacket)"
+        },
+        {
+          "type": "set_DNS_transaction_id (rpacket txid) (rpacket)"
+        },
+        {
+          "type": "set_DNS_packet_response (rpacket) (rpacket)"
+        },
+        {
+          "type": "create_DNS_query (rquery)"
+        },
+        {
+          "type": "set_query_name (rquery client_query) (rquery)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (rpacket rquery) (rpkt)"
+        },
+        {
+          "type": "create_DNS_resource_record (rr)"
+        },
+        {
+          "type": "set_DNS_resource_record_domain (rr client_query) (rr)"
+        },
+        {
+          "type": "set (127.0.0.1) (ip)"
+        },
+        {
+          "type": "set_DNS_resource_record_value (rr ip) (rr)"
+        },
+        {
+          "type": "add_DNS_response_to_answer (rpacket rr) (rpacket)"
+        },
+        {
+          "type": "set (true) (dns_response_sent)"
+        },
+        {
+          "type": "add_element_to_dict (dict dns_response_sent) (dict)"
+        },
+        {
+          "type": "set (2) (time)"
+        },
+        {
+          "type": "wait (time)"
+        },
+        {
+          "type": "send (rpacket)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "TIMEOUT_ENDING (copy)": {
+      "entry": [
+        {
+          "type": "set (false) (query_received)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict query_received ) (dict)"
+        },
+        {
           "type": "done"
         }
       ],
@@ -229,6 +344,62 @@
         ]
       }
     },
+    "TIMEOUT_ENDING": {
+      "entry": [
+        {
+          "type": "set (false) (response_received)"
+        },
+        {
+          "type": "add_element_to_dict (dict response_received ) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC (copy)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "New state 1": {
+      "entry": [
+        {
+          "type": "set (true) (response_received)"
+        },
+        {
+          "type": "add_element_to_dict (dict response_received) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC (copy)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              },
+              {
+                "type": "assign (dict) (dict)"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "EXCHANGE_SYNC": {
       "entry": [
         {
@@ -238,6 +409,11 @@
           "type": "done"
         }
       ]
+    },
+    "EXCHANGE_SYNC (copy)": {
+      "entry": {
+        "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+      }
     }
   }
 }

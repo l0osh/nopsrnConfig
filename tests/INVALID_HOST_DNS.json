@@ -1,0 +1,243 @@
+{
+  "id": "INVALID_HOST_DNS",
+  "initial": "INITIALIZING",
+  "states": {
+    "INITIALIZING": {
+      "on": {
+        "STARTED": [
+          {
+            "target": "INITIATING_CONTROL_CHANNEL",
+            "actions": []
+          }
+        ]
+      }
+    },
+    "INITIATING_CONTROL_CHANNEL": {
+      "entry": [
+        {
+          "type": "get_from_file (variables role) (role)"
+        },
+        {
+          "type": "get_from_file (variables controller_conf_filename) (controller_conf_filename)"
+        },
+        {
+          "type": "call (CONTROL_CHANNEL_SET_UP role controller_conf_filename) (event ctrl)"
+        },
+        {
+          "type": "get_from_file (variables client) (client)"
+        },
+        {
+          "type": "trigger (event)"
+        }
+      ],
+      "on": {
+        "CONTROL_CHANNEL_READY": [
+          {
+            "target": "SENDING_FIRST_QUERY",
+            "cond": "equal (role client)",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          },
+          {
+            "target": "LISTENING",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "SENDING_FIRST_QUERY": {
+      "entry": [
+        {
+          "type": "get_from_file (variables ip) (ip)"
+        },
+        {
+          "type": "get_from_file (variables query) (query)"
+        },
+        {
+          "type": "get_from_file (variables port) (port)"
+        },
+        {
+          "type": "create_DNS_packet (pkt)"
+        },
+        {
+          "type": "set_IP_dst (pkt ip) (pkt)"
+        },
+        {
+          "type": "set_UDP_sport (pkt port) (pkt)"
+        },
+        {
+          "type": "create_DNS_query(qname)"
+        },
+        {
+          "type": "set_query_name (qname query) (qname)"
+        },
+        {
+          "type": "add_DNS_query_to_DNS_packet (pkt qname) (pkt)"
+        },
+        {
+          "type": "set_DNS_packet_query (pkt) (pkt)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "set (true) (query_sent)"
+        },
+        {
+          "type": "add_element_to_dict (dict query_sent) (dict)"
+        },
+        {
+          "type": "send (pkt)"
+        }
+      ],
+      "on": {
+        "PACKET_SENT": [
+          {
+            "target": "EXCHANGE_SYNC (copy)",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "LISTENING": {
+      "entry": [
+        {
+          "type": "get_from_file (variables filter) (filter)"
+        },
+        {
+          "type": "packet_filter (filter)"
+        },
+        {
+          "type": "set (2) (timeout)"
+        },
+        {
+          "type": "listen (queue)"
+        },
+        {
+          "type": "wait_packet_signal (queue timeout)"
+        }
+      ],
+      "on": {
+        "TIMEOUT": [
+          {
+            "target": "TIMEOUT_ENDING",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ],
+        "PACKET_AVAILABLE": [
+          {
+            "target": "PACKET_RECIEVED",
+            "actions": [
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC (copy)": {
+      "entry": [
+        {
+          "type": "set (2) (time)"
+        },
+        {
+          "type": "wait (time)"
+        },
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        }
+      ]
+    },
+    "TIMEOUT_ENDING": {
+      "entry": [
+        {
+          "type": "set (false) (query_received)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict query_recieved ) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "PACKET_RECIEVED": {
+      "entry": [
+        {
+          "type": "set (true) (query_received)"
+        },
+        {
+          "type": "create_dict (dict)"
+        },
+        {
+          "type": "add_element_to_dict (dict query_received) (dict)"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "on": {
+        "DONE": [
+          {
+            "target": "EXCHANGE_SYNC",
+            "actions": [
+              {
+                "type": "assign (dict) (dict)"
+              },
+              {
+                "type": "assign (ctrl) (ctrl)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "EXCHANGE_SYNC": {
+      "entry": [
+        {
+          "type": "call (EXCHANGE_SYNC ctrl dict) (event sync_dict)"
+        },
+        {
+          "type": "done"
+        }
+      ]
+    }
+  }
+}
